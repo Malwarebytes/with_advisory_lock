@@ -13,7 +13,7 @@ module WithAdvisoryLock
       if connection.open_transactions > 0
         # lock is released automatically at transaction close
       else
-        execute_successful?('pg_try_advisory_lock')
+        execute_successful?('pg_advisory_unlock')
       end
     end
 
