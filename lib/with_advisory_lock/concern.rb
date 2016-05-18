@@ -7,25 +7,36 @@ module WithAdvisoryLock
 
     module ClassMethods
       def with_advisory_lock(lock_name, timeout_seconds=nil, &block)
-        Rails.logger.debug "[with_advisory_lock] lock_name: #{ lock_name }"
+        Rails.logger.debug "[WithAdvisoryLock]#with_advisory_lock lock_name: #{ lock_name }"
         result = with_advisory_lock_result(lock_name, timeout_seconds, &block)
         result.lock_was_acquired? ? result.result : false
       end
 
       def with_advisory_lock_result(lock_name, timeout_seconds=nil, &block)
-        Rails.logger.debug "[with_advisory_lock_result] lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, timeout_seconds)
         impl.with_advisory_lock_if_needed(&block)
       end
 
       def advisory_lock_exists?(lock_name)
-        Rails.logger.debug "[advisory_lock_exists?] lock_name: #{ lock_name }"
+        Rails.logger.debug "[WithAdvisoryLock]#advisory_lock_exists? lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, 0)
         impl.already_locked? || !impl.yield_with_lock.lock_was_acquired?
       end
 
       def current_advisory_lock
         WithAdvisoryLock::Base.lock_stack.first
+      end
+
+      def acquire_lock!(lock_name, timeout_seconds = nil)
+        Rails.logger.debug "[WithAdvisoryLock]#acquire_lock! lock_name: #{ lock_name }"
+        impl = impl_class.new(connection, lock_name, timeout_seconds)
+        impl.try_lock
+      end
+
+      def release_lock!(lock_name)
+        Rails.logger.debug "[WithAdvisoryLock]#release_lock! lock_name: #{ lock_name }"
+        impl = impl_class.new(connection, lock_name, 0)
+        impl.release_lock
       end
 
       private

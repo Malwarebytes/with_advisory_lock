@@ -12,6 +12,7 @@ module WithAdvisoryLock
     def release_lock
       if connection.open_transactions > 0
         # lock is released automatically at transaction close
+        true
       else
         execute_successful?('pg_advisory_unlock')
       end
