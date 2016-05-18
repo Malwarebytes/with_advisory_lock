@@ -9,6 +9,22 @@ module WithAdvisoryLock
       end
     end
 
+    def try_shared_lock
+      if connection.open_transactions > 0
+        execute_successful?('pg_try_advisory_xact_lock_shared')
+      else
+        execute_successful?('pg_try_advisory_lock_shared')
+      end
+    end
+
+    def exclusive_lock
+      if connection.open_transactions > 0
+        execute_successful?('pg_advisory_xact_lock')
+      else
+        execute_successful?('pg_advisory_lock')
+      end
+    end
+
     def release_lock
       if connection.open_transactions > 0
         # lock is released automatically at transaction close
@@ -18,11 +34,20 @@ module WithAdvisoryLock
       end
     end
 
+    def release_shared_lock
+      if connection.open_transactions > 0
+        # lock is released automatically at transaction close
+        true
+      else
+        execute_successful?('pg_advisory_unlock_shared')
+      end
+    end
+
     def execute_successful?(pg_function)
       sql = "SELECT #{pg_function}(#{lock_keys.join(',')}) AS #{unique_column_name}"
       result = connection.select_value(sql)
       # MRI returns 't', jruby returns true. YAY!
-      (result == 't' || result == true)
+      (result == 't' || result == '' || result == true)
     end
 
     # PostgreSQL wants 2 32bit integers as the lock key.

@@ -27,16 +27,36 @@ module WithAdvisoryLock
         WithAdvisoryLock::Base.lock_stack.first
       end
 
-      def acquire_lock!(lock_name, timeout_seconds = nil)
+      def try_acquire_lock!(lock_name, timeout_seconds = nil)
         Rails.logger.debug "[WithAdvisoryLock]#acquire_lock! lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, timeout_seconds)
         impl.try_lock
       end
 
-      def release_lock!(lock_name)
+      def try_acquire_shared_lock!(lock_name, timeout_seconds = nil)
+        if impl_class == WithAdvisoryLock::PostgreSQL
+          Rails.logger.debug "[WithAdvisoryLock]#try_acquire_shared_lock! lock_name: #{ lock_name }"
+          impl = impl_class.new(connection, lock_name, timeout_seconds)
+          impl.try_shared_lock
+        else
+          try_acquire_lock!(lock_name, timeout_seconds)
+        end
+      end
+
+      def try_release_lock!(lock_name)
         Rails.logger.debug "[WithAdvisoryLock]#release_lock! lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, 0)
         impl.release_lock
+      end
+
+      def try_release_shared_lock!(lock_name)
+        if impl_class == WithAdvisoryLock::PostgreSQL
+          Rails.logger.debug "[WithAdvisoryLock]#try_release_shared_lock! lock_name: #{ lock_name }"
+          impl = impl_class.new(connection, lock_name, 0)
+          impl.release_shared_lock
+        else
+          try_release_lock!(lock_name)
+        end
       end
 
       private

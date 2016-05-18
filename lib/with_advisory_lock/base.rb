@@ -71,17 +71,32 @@ module WithAdvisoryLock
     end
 
     def yield_with_lock
-      if try_lock
-        begin
-          lock_stack.push(lock_str)
-          result = block_given? ? yield : nil
-          Result.new(true, result)
-        ensure
-          lock_stack.pop
-          release_lock
+      if self.is_a?(WithAdvisoryLock::PostgreSQL) && @timeout_seconds.nil?
+        if exclusive_lock
+          begin
+            lock_stack.push(lock_str)
+            result = block_given? ? yield : nil
+            Result.new(true, result)
+          ensure
+            lock_stack.pop
+            release_lock
+          end
+        else
+          FAILED_TO_LOCK
         end
       else
-        FAILED_TO_LOCK
+        if try_lock
+          begin
+            lock_stack.push(lock_str)
+            result = block_given? ? yield : nil
+            Result.new(true, result)
+          ensure
+            lock_stack.pop
+            release_lock
+          end
+        else
+          FAILED_TO_LOCK
+        end
       end
     end
 
