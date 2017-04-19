@@ -28,7 +28,7 @@ module WithAdvisoryLock
       end
 
       def try_acquire_lock!(lock_name, timeout_seconds = nil)
-        Rails.logger.debug "[WithAdvisoryLock]#acquire_lock! lock_name: #{ lock_name }"
+        Rails.logger.debug "[WithAdvisoryLock]#try_acquire_lock! lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, timeout_seconds)
         impl.try_lock
       end
@@ -44,7 +44,7 @@ module WithAdvisoryLock
       end
 
       def try_release_lock!(lock_name)
-        Rails.logger.debug "[WithAdvisoryLock]#release_lock! lock_name: #{ lock_name }"
+        Rails.logger.debug "[WithAdvisoryLock]#try_release_lock! lock_name: #{ lock_name }"
         impl = impl_class.new(connection, lock_name, 0)
         impl.release_lock
       end

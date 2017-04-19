@@ -30,7 +30,17 @@ module WithAdvisoryLock
         # lock is released automatically at transaction close
         true
       else
-        execute_successful?('pg_advisory_unlock')
+        begin
+          execute_successful?('pg_advisory_unlock')
+        rescue ActiveRecord::StatementInvalid => e
+          raise unless e.message =~ / ERROR: +current transaction is aborted,/
+          begin
+            connection.rollback_db_transaction
+            execute_successful?('pg_advisory_unlock')
+          ensure
+            connection.begin_db_transaction
+          end
+        end
       end
     end
 
@@ -39,7 +49,17 @@ module WithAdvisoryLock
         # lock is released automatically at transaction close
         true
       else
-        execute_successful?('pg_advisory_unlock_shared')
+        begin
+          execute_successful?('pg_advisory_unlock_shared')
+        rescue ActiveRecord::StatementInvalid => e
+          raise unless e.message =~ / ERROR: +current transaction is aborted,/
+          begin
+            connection.rollback_db_transaction
+            execute_successful?('pg_advisory_unlock')
+          ensure
+            connection.begin_db_transaction
+          end
+        end
       end
     end
 
